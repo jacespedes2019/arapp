@@ -69,11 +69,27 @@ dependencies {
     testImplementation (libs.mockitocore)
     testImplementation (libs.mockitojunitjupiter)
 
-    //Lifecycle
-    implementation(libs.navigation.compose)
-    implementation(libs.kotlinx.serialization.json)
+    //            Compose Libraries
+    implementation(libs.voyager.navigator)
+    implementation(libs.voyager.screenmodel)
+    implementation(libs.voyager.bottom.sheet.navigator)
+    implementation(libs.voyager.voyager.transitions)
+    implementation(libs.voyager.lifecycle.kmp)
+    implementation(libs.compose.material3)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    //            DI
+    implementation(libs.voyager.koin)
+    implementation(libs.koin.compose)
+    api(libs.koin.core)
+    implementation(project.dependencies.platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+
+    //            Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
 
     //Retrofit
     implementation(libs.retrofit)
