@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="models_labels">
+        <item>Custom 3D model\n<small><i>Provide your own uri</i></small></item>
+        <item>Astronaut\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>Barramundi Fish\n<small><i>Microsoft <small>(KhronosGroup)</small></i></small></item>
+        <item>Camp Site\n<small><i>Linus Ekenstam <small>(Poly)</small></i></small></item>
+        <item>Cat\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>Cesium Milk Truck\n<small><i>Cesium <small>(KhronosGroup)</small></i></small></item>
+        <item>Damaged Helmet\n<small><i>theblueturtle_ <small>(KhronosGroup)</small></i></small></item>
+        <item>Flight Helmet\n<small><i>Microsoft <small>(KhronosGroup)</small></i></small></item>
+        <item>Forest\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>Fox\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>House plants\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>Monster\n<small><i>3drt.com <small>(KhronosGroup)</small></i></small></item>
+        <item>Shark\n<small><i>Google <small>(Poly)</small></i></small></item>
+        <item>Sci Fi Helmet\n<small><i>Michael Pavlovic <small>(KhronosGroup)</small></i></small></item>
+        <item>Wishing Well\n<small><i>Don Carson <small>(Poly)</small></i></small></item>
+    </array>
+
+    <array name="models_uris">
+        <item />
+        <item>https://simon-marquis.fr/ar/Astronaut.glb</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF/BarramundiFish.gltf</item>
+        <item>https://simon-marquis.fr/ar/Camp Site.glb</item>
+        <item>https://simon-marquis.fr/ar/Cat.glb</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/FlightHelmet/glTF/FlightHelmet.gltf</item>
+        <item>https://simon-marquis.fr/ar/Forest.glb</item>
+        <item>https://simon-marquis.fr/ar/Fox.glb</item>
+        <item>https://simon-marquis.fr/ar/House plant.glb</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/1.0/Monster/glTF/Monster.gltf</item>
+        <item>https://simon-marquis.fr/ar/Shark.glb</item>
+        <item>https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf</item>
+        <item>https://simon-marquis.fr/ar/Wishing Well.glb</item>
+    </array>
+
+</resources>
