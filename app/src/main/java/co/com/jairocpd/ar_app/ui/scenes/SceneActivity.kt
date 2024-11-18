@@ -63,6 +63,7 @@ import com.google.ar.core.DepthPoint
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import com.google.ar.core.Point
+import com.google.ar.core.Pose
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
 import com.google.ar.core.TrackingFailureReason.BAD_STATE
@@ -391,14 +392,29 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         val session = arSceneView.session ?: return null
         val frame = arSceneView.arFrame ?: return null
 
-        // Obtener las coordenadas centrales del bounding box.
+        // Obtener las coordenadas centrales del bounding box
         val centerX = detectedObject.boundingBox.centerX()
         val centerY = detectedObject.boundingBox.centerY()
 
-        // Realizar un hit test en el espacio AR usando las coordenadas.
-        val hitResult = frame.hitTest(centerX.toFloat(), centerY.toFloat()).firstOrNull() ?: return null
-        return session.createAnchor(hitResult.hitPose)
+        // Transformar las coordenadas del bounding box al tamaño del viewport de la AR Scene
+        val scaleX = arSceneView.width / 300f // 300 es el ancho del bitmap redimensionado
+        val scaleY = arSceneView.height / 300f // 300 es la altura del bitmap redimensionado
+        val viewportX = centerX * scaleX
+        val viewportY = centerY * scaleY
+
+        // Realizar un hit test en el espacio AR usando las coordenadas transformadas
+        val hitResult = frame.hitTest(viewportX, viewportY).firstOrNull() ?: return null
+
+        // Obtener la pose original del hit result
+        val hitPose = hitResult.hitPose
+
+        // Ajustar la rotación del Pose para que el cubo no esté girado
+        val correctedPose = hitPose.compose(Pose.makeRotation(0f, 0f, 0f, 1f)) // Quaternion para rotación identidad
+
+        // Crear y devolver el ancla con la pose corregida
+        return session.createAnchor(correctedPose)
     }
+
 
     private fun copyPixelFromView(callback: (Bitmap) -> Unit) {
         val view = arSceneView
