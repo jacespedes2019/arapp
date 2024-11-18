@@ -91,6 +91,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import com.google.ar.sceneform.math.Quaternion
 
 
 class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inflate) {
@@ -332,8 +333,13 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
 
         node.attach(anchor(), arSceneView.scene, focus)
+
+        // Establecer la rotación inicial del nodo en 0
+        node.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 0f)
+
         nodeList.add(node) // Agrega el nodo a la lista
     }
+
 
 
     private fun onArUpdate() {
@@ -559,6 +565,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
     }
 
+    private val smoothingFactor = 0.1f // Factor de suavización (ajustable entre 0 y 1)
+    private var smoothedRotationX = 0f
+    private var smoothedRotationY = 0f
+    private var smoothedRotationZ = 0f
+
     private fun activateGyroscopeControl(node: Nodes) {
         if (node !is MaterialNode) return // Solo aplicamos el control a MaterialNodes
 
@@ -567,12 +578,17 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                 if (event == null || event.sensor.type != Sensor.TYPE_GYROSCOPE) return
 
                 // Lee los valores actuales del giroscopio
-                val rotationRateX = event.values[0] // Velocidad angular alrededor del eje X
-                val rotationRateY = event.values[1] // Velocidad angular alrededor del eje Y
-                val rotationRateZ = event.values[2] // Velocidad angular alrededor del eje Z
+                val rawRotationRateX = event.values[0] // Velocidad angular alrededor del eje X
+                val rawRotationRateY = event.values[1] // Velocidad angular alrededor del eje Y
+                val rawRotationRateZ = event.values[2] // Velocidad angular alrededor del eje Z
 
-                // Aplica los valores directamente al nodo
-                node.setRotationFromGyroscope(rotationRateX, rotationRateY, rotationRateZ)
+                // Suaviza los datos utilizando el promedio móvil exponencial
+                smoothedRotationX = smoothedRotationX + smoothingFactor * (rawRotationRateX - smoothedRotationX)
+                smoothedRotationY = smoothedRotationY + smoothingFactor * (rawRotationRateY - smoothedRotationY)
+                smoothedRotationZ = smoothedRotationZ + smoothingFactor * (rawRotationRateZ - smoothedRotationZ)
+
+                // Aplica los valores suavizados directamente al nodo
+                node.setRotationFromGyroscope(smoothedRotationX, smoothedRotationY, smoothedRotationZ)
             }
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -583,6 +599,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
             sensorManager.registerListener(gyroscopeListener, it, SensorManager.SENSOR_DELAY_UI)
         }
     }
+
 
 
 

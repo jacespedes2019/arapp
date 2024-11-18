@@ -24,7 +24,6 @@ import co.com.jairocpd.ar_app.util.LineSimplifier
 import co.com.jairocpd.ar_app.util.MaterialProperties
 import co.com.jairocpd.ar_app.util.distance
 import co.com.jairocpd.ar_app.util.formatDistance
-import co.com.jairocpd.ar_app.util.graphics.ExtrudedCylinder
 import co.com.jairocpd.ar_app.util.rotation
 import co.com.jairocpd.ar_app.util.translation
 import co.com.jairocpd.ar_app.util.toArColor
