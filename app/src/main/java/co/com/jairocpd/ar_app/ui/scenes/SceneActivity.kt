@@ -91,6 +91,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import co.com.jairocpd.ar_app.domain.model.DetectedObject
 import co.com.jairocpd.ar_app.ml.ObjectDetectionModel
+import co.com.jairocpd.ar_app.util.GyroscopeController
 import com.google.ar.sceneform.math.Quaternion
 
 
@@ -110,6 +111,8 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     //Giroscopio
+    private lateinit var gyroscopeController: GyroscopeController
+
     private lateinit var sensorManager: SensorManager
     private var gyroscopeSensor: Sensor? = null
     private var gyroscopeListener: SensorEventListener? = null
@@ -140,24 +143,23 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         initAr()
         initWithIntent(intent)
         // Inicializar el SensorManager y el sensor del giroscopio
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        gyroscopeController = GyroscopeController(
+            context = this,
+            smoothingFactor = 0.5f // Factor ajustable
+        ) { x, y, z ->
+            // Callback cuando se actualiza la rotación
+            coordinator.focusedNode?.let { node ->
+                if (node is MaterialNode) {
+                    node.setRotationFromGyroscope(x, y, z)
+                }
+            }
+        }
         // Carga el modelo desde los assets
         objectDetectionModel = ObjectDetectionModel(this)
     }
 
-    // Función para cargar el archivo del modelo
-    private fun loadModelFile(modelPath: String): MappedByteBuffer {
-        val assetFileDescriptor = assets.openFd(modelPath)
-        val fileInputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
-        val fileChannel = fileInputStream.channel
-        val startOffset = assetFileDescriptor.startOffset
-        val declaredLength = assetFileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
-    }
-
     override fun onDestroy() {
-        gyroscopeListener?.let { sensorManager.unregisterListener(it) }
+        gyroscopeController.stop()
         objectDetectionModel.close()
         super.onDestroy()
     }
@@ -488,8 +490,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     sceneBehavior.state = STATE_EXPANDED
                 }
                 // Detener el sensor del giroscopio cuando no hay nodo seleccionado
-                gyroscopeListener?.let { sensorManager.unregisterListener(it) }
-                gyroscopeListener = null
+                gyroscopeController.stop()
             }
             coordinator.selectedNode -> {
                 with(bottomSheetNode.header) {
@@ -514,38 +515,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
     }
 
-    private val smoothingFactor = 0.1f // Factor de suavización (ajustable entre 0 y 1)
-    private var smoothedRotationX = 0f
-    private var smoothedRotationY = 0f
-    private var smoothedRotationZ = 0f
-
     private fun activateGyroscopeControl(node: Nodes) {
-        if (node !is MaterialNode) return // Solo aplicamos el control a MaterialNodes
-
-        gyroscopeListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event == null || event.sensor.type != Sensor.TYPE_GYROSCOPE) return
-
-                // Lee los valores actuales del giroscopio
-                val rawRotationRateX = event.values[0] // Velocidad angular alrededor del eje X
-                val rawRotationRateY = event.values[1] // Velocidad angular alrededor del eje Y
-                val rawRotationRateZ = event.values[2] // Velocidad angular alrededor del eje Z
-
-                // Suaviza los datos utilizando el promedio móvil exponencial
-                smoothedRotationX = smoothedRotationX + smoothingFactor * (rawRotationRateX - smoothedRotationX)
-                smoothedRotationY = smoothedRotationY + smoothingFactor * (rawRotationRateY - smoothedRotationY)
-                smoothedRotationZ = smoothedRotationZ + smoothingFactor * (rawRotationRateZ - smoothedRotationZ)
-
-                // Aplica los valores suavizados directamente al nodo
-                node.setRotationFromGyroscope(smoothedRotationX, smoothedRotationY, smoothedRotationZ)
-            }
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
-        // Registrar el listener del giroscopio
-        gyroscopeSensor?.let {
-            sensorManager.registerListener(gyroscopeListener, it, SensorManager.SENSOR_DELAY_UI)
+        if (node is MaterialNode) {
+            gyroscopeController.start()
+        } else {
+            gyroscopeController.stop()
         }
     }
 
