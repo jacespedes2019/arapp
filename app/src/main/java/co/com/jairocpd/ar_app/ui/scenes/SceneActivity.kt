@@ -240,7 +240,8 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
         header.apply {
             root.setOnClickListener { coordinator.selectNode(null) }
-            delete.setOnClickListener { coordinator.focusedNode?.detach() }
+            delete.setOnClickListener { coordinator.focusedNode?.detach()
+                isCubePlaced = false}
         }
 
         body.apply {
@@ -287,15 +288,23 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
             return
         }
 
-        frame.hitTest(motionEvent).firstOrNull {
-            val trackable = it.trackable
-            when {
-                trackable is Plane && trackable.isPoseInPolygon(it.hitPose) -> true
-                trackable is DepthPoint -> true
-                trackable is Point -> true
-                else -> false
-            }
-        }?.let { createNodeAndAddToScene(anchor = { it.createAnchor() }) } ?: coordinator.selectNode(null)
+        if(isCubePlaced) {
+            coordinator.selectNode(null)
+            return
+        }
+        else {
+            frame.hitTest(motionEvent).firstOrNull {
+                val trackable = it.trackable
+                when {
+                    trackable is Plane && trackable.isPoseInPolygon(it.hitPose) -> true
+                    trackable is DepthPoint -> true
+                    trackable is Point -> true
+                    else -> false
+                }
+            }?.let { createNodeAndAddToScene(anchor = { it.createAnchor() }) } ?: coordinator.selectNode(null)
+        }
+
+
     }
 
     private fun createNodeAndAddToScene(anchor: () -> Anchor, focus: Boolean = true) {
