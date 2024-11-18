@@ -35,9 +35,15 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        mlModelBinding = true
         viewBinding = true
     }
+
+    androidResources {
+        noCompress("tflite")
+    }
 }
+
 
 dependencies {
 
@@ -63,4 +69,11 @@ dependencies {
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
+
+    implementation (libs.tensorflow.lite)
+    implementation (libs.tensorflow.lite.support)
+
+    // MLKit
+    implementation (libs.mlkitobjectdetectioncustom)
+    implementation (libs.objectdetection)
 }

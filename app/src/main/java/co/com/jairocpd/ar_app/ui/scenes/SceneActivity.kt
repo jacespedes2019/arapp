@@ -1,13 +1,19 @@
 package co.com.jairocpd.ar_app.ui.scenes
 
+import android.content.ContentValues.TAG
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.RectF
 import android.os.Bundle
+import android.os.Handler
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.PixelCopy
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -26,7 +32,9 @@ import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
 import co.com.jairocpd.ar_app.domain.model.Nodes
 import co.com.jairocpd.ar_app.ui.ar.ArActivity
+import co.com.jairocpd.ar_app.util.DetectedObject
 import co.com.jairocpd.ar_app.util.MaterialProperties
+import co.com.jairocpd.ar_app.util.ObjectDetector
 import co.com.jairocpd.ar_app.util.SimpleSeekBarChangeListener
 import co.com.jairocpd.ar_app.util.behavior
 import co.com.jairocpd.ar_app.util.format
@@ -52,6 +60,7 @@ import com.google.ar.core.Config.LightEstimationMode
 import com.google.ar.core.Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
 import com.google.ar.core.Config.UpdateMode
 import com.google.ar.core.DepthPoint
+import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import com.google.ar.core.Point
 import com.google.ar.core.Session
@@ -68,7 +77,15 @@ import com.google.ar.core.TrackingState.STOPPED
 import com.google.ar.core.TrackingState.TRACKING
 import com.google.ar.sceneform.ArSceneView
 import com.google.ar.sceneform.HitTestResult
+import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.PlaneRenderer
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
 class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inflate) {
 
@@ -100,12 +117,44 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     private val bottomSheetNode get() = binding.bottomSheetNode
 
+    // Inicializa el modelo
+    private lateinit var tflite: Interpreter
+    private lateinit var labels: List<String>
+    private lateinit var imageProcessor: ImageProcessor
+    private var isCubePlaced = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSceneBottomSheet()
         initNodeBottomSheet()
         initAr()
         initWithIntent(intent)
+        // Carga el modelo desde los assets
+        val model = loadModelFile("ssd_mobilenet_v1_1_metadata_1.tflite")
+        tflite = Interpreter(model)
+
+        // Inicializa el procesador de imagen
+        imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(300, 300, ResizeOp.ResizeMethod.BILINEAR))
+            .build()
+
+        // Carga las etiquetas si están disponibles
+        labels = assets.open("labels.txt").bufferedReader().readLines()
+    }
+
+    // Función para cargar el archivo del modelo
+    private fun loadModelFile(modelPath: String): MappedByteBuffer {
+        val assetFileDescriptor = assets.openFd(modelPath)
+        val fileInputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
+        val fileChannel = fileInputStream.channel
+        val startOffset = assetFileDescriptor.startOffset
+        val declaredLength = assetFileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        tflite.close() // Asegúrate de cerrar el modelo para liberar recursos.
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -230,21 +279,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
     }
 
-    private fun shouldHandleDrawing(motionEvent: MotionEvent? = null, hitTestResult: HitTestResult? = null): Boolean {
-        if (coordinator.selectedNode?.isTransforming == true) return false
-        if (arSceneView.arFrame?.camera?.trackingState != TRACKING) return false
-        if (motionEvent?.action == MotionEvent.ACTION_DOWN && hitTestResult?.node != null) return false
-        return true
-    }
-
-
-    private fun prompt(block: DialogInputBinding.(AlertDialog.Builder) -> Unit) = DialogInputBinding.inflate(LayoutInflater.from(ContextThemeWrapper(this, R.style.AlertDialog)), null, false).apply {
-        block(AlertDialog.Builder(root.context).setView(root))
-    }
-
-
-
-
     private fun onArTap(motionEvent: MotionEvent) {
         val frame = arSceneView.arFrame ?: return
         if (frame.camera.trackingState != TRACKING) {
@@ -278,7 +312,112 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
         onArUpdateStatusText(state, reason)
         onArUpdateStatusIcon(state, reason)
+        detectObjects()
     }
+
+    private fun detectObjects() {
+        val frame = arSceneView.arFrame ?: return
+        copyPixelFromView { bitmap ->
+            // Preprocesar la imagen
+            val resizedBitmap = resizeBitmap(bitmap, 300, 300)
+            val tensorImage = TensorImage.fromBitmap(resizedBitmap)
+            val processedImage = imageProcessor.process(tensorImage)
+
+            // Crear buffers de entrada y salida
+            val inputBuffer = processedImage.buffer // Buffer de entrada con la imagen procesada
+            val outputLocations = Array(1) { Array(10) { FloatArray(4) } } // Coordenadas de los bounding boxes
+            val outputClasses = Array(1) { FloatArray(10) } // Clases de los objetos detectados
+            val outputScores = Array(1) { FloatArray(10) } // Confianza de las detecciones
+            val outputCount = FloatArray(1) // Número de detecciones
+
+            // Ejecutar el modelo
+            val outputs = mapOf(
+                0 to outputLocations,
+                1 to outputClasses,
+                2 to outputScores,
+                3 to outputCount
+            )
+            tflite.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputs)
+
+            // Procesar las detecciones
+            val count = outputCount[0].toInt()
+            for (i in 0 until count) {
+                val score = outputScores[0][i]
+                if (score > 0.5) { // Filtrar detecciones con alta confianza
+                    val labelIndex = outputClasses[0][i].toInt()
+                    val label = labels.getOrNull(labelIndex) ?: continue // Obtener el label del objeto
+
+                    // Filtrar solo por el label deseado
+                    if (label == "keyboard"&& !isCubePlaced) { // Reemplaza "desired_label" con el label que necesitas
+                        val boundingBox = RectF(
+                            outputLocations[0][i][1] * resizedBitmap.width,  // left
+                            outputLocations[0][i][0] * resizedBitmap.height, // top
+                            outputLocations[0][i][3] * resizedBitmap.width,  // right
+                            outputLocations[0][i][2] * resizedBitmap.height  // bottom
+                        )
+
+                        val detectedObject = DetectedObject(
+                            boundingBox = boundingBox,
+                            labels = listOf(label),
+                            confidence = score
+                        )
+
+                        handleDetectedObject(detectedObject)
+                        isCubePlaced = true
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun resizeBitmap(bitmap: Bitmap, width: Int, height: Int): Bitmap {
+        return Bitmap.createScaledBitmap(bitmap, width, height, true)
+    }
+
+    private fun handleDetectedObject(detectedObject: DetectedObject) {
+        Log.d(TAG, "Objeto detectado: ${detectedObject.labels[0]}")
+        Toast.makeText(this, "Detectado: ${detectedObject.labels[0]}", Toast.LENGTH_SHORT).show()
+
+        // Crear un anchor y dibujar un cubo en la posición detectada.
+        val anchor = createAnchorFromObject(detectedObject) ?: return
+        createNodeAndAddToScene(
+            anchor = { anchor },
+            focus = true
+        )
+    }
+
+    private fun createAnchorFromObject(detectedObject: DetectedObject): Anchor? {
+        val session = arSceneView.session ?: return null
+        val frame = arSceneView.arFrame ?: return null
+
+        // Obtener las coordenadas centrales del bounding box.
+        val centerX = detectedObject.boundingBox.centerX()
+        val centerY = detectedObject.boundingBox.centerY()
+
+        // Realizar un hit test en el espacio AR usando las coordenadas.
+        val hitResult = frame.hitTest(centerX.toFloat(), centerY.toFloat()).firstOrNull() ?: return null
+        return session.createAnchor(hitResult.hitPose)
+    }
+
+    private fun copyPixelFromView(callback: (Bitmap) -> Unit) {
+        val view = arSceneView
+        if (view.width == 0 || view.height == 0) {
+            Log.e(TAG, "ArSceneView aún no está inicializado: ancho o alto = 0")
+            return
+        }
+
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        PixelCopy.request(view, bitmap, { result ->
+            if (result == PixelCopy.SUCCESS) {
+                callback(bitmap)
+            } else {
+                Log.e(TAG, "Fallo al copiar los píxeles de la vista AR.")
+            }
+        }, Handler(mainLooper))
+    }
+
+
 
     private fun onArUpdateStatusText(state: TrackingState?, reason: TrackingFailureReason?) = bottomSheetScene.header.label.setText(
         when (state) {

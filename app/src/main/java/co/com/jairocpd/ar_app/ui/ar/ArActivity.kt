@@ -30,7 +30,6 @@ import androidx.core.view.MenuCompat
 import androidx.viewbinding.ViewBinding
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.ui.scenes.SceneActivity
-import co.com.jairocpd.ar_app.util.VideoRecorder
 import co.com.jairocpd.ar_app.util.createArCoreViewerIntent
 import co.com.jairocpd.ar_app.util.redirectToApplicationSettings
 import co.com.jairocpd.ar_app.util.safeStartActivity
@@ -53,7 +52,6 @@ abstract class ArActivity<T : ViewBinding>(private val inflate: (LayoutInflater)
 
     private var installRequested: Boolean = false
 
-    private lateinit var videoRecorder: VideoRecorder
 
     private val arCoreViewerIntent by lazy {
         createArCoreViewerIntent(
@@ -73,20 +71,6 @@ abstract class ArActivity<T : ViewBinding>(private val inflate: (LayoutInflater)
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
-        videoRecorder = VideoRecorder(this, arSceneView) { isRecording ->
-            if (isRecording) {
-                Toast.makeText(this, R.string.recording, Toast.LENGTH_LONG).show()
-            }
-
-            recordingIndicator.apply {
-                visibility = if (isRecording) View.VISIBLE else View.GONE
-                (drawable as? Animatable)?.apply { if (isRecording) start() else stop() }
-            }
-        }
-        recordingIndicator.setOnClickListener {
-            videoRecorder.stop()
-            videoRecorder.export()
-        }
     }
 
     override fun onResume() {
@@ -118,7 +102,6 @@ abstract class ArActivity<T : ViewBinding>(private val inflate: (LayoutInflater)
     override fun onDestroy() {
         super.onDestroy()
         arSceneView.destroy()
-        videoRecorder.stop()
     }
 
     abstract val arSceneView: ArSceneView

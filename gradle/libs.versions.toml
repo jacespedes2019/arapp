@@ -24,8 +24,13 @@ google-oss = "17.1.0"
 google-oss-plugin = "0.10.6"
 junit = "4.13.2"
 kotlin = "2.0.21"
+objectDetection = "17.0.2"
+objectDetectionCustomVersion = "17.0.2"
 spotless = "6.25.0"
+tensorflowLite = "2.9.0"
+tensorflowLiteSupport = "0.3.1"
 viewbinding = "8.7.2"
+objectDetectionCustom = "17.0.2"
 
 
 [libraries]
@@ -49,6 +54,8 @@ google-ar-sceneform-rendering = { module = "com.google.ar.sceneform:rendering", 
 google-ar-sceneform-sceneformBase = { module = "com.google.ar.sceneform:sceneform-base", version.ref = "google-ar-sceneform" }
 google-ar-sceneform-ux = { module = "com.google.ar.sceneform.ux:sceneform-ux", version.ref = "google-ar-sceneform" }
 junit = { module = "junit:junit", version.ref = "junit" }
+mlkitobjectdetectioncustom = { module = "com.google.mlkit:object-detection-custom", version.ref = "objectDetectionCustomVersion" }
+objectdetection = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterMoshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshiKotlinCodegen" }
@@ -56,6 +63,8 @@ converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.r
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
