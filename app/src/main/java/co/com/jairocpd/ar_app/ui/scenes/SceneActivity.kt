@@ -32,9 +32,7 @@ import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
 import co.com.jairocpd.ar_app.domain.model.Nodes
 import co.com.jairocpd.ar_app.ui.ar.ArActivity
-import co.com.jairocpd.ar_app.util.DetectedObject
 import co.com.jairocpd.ar_app.util.MaterialProperties
-import co.com.jairocpd.ar_app.util.ObjectDetector
 import co.com.jairocpd.ar_app.util.SimpleSeekBarChangeListener
 import co.com.jairocpd.ar_app.util.behavior
 import co.com.jairocpd.ar_app.util.format
@@ -91,6 +89,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import co.com.jairocpd.ar_app.domain.model.DetectedObject
+import co.com.jairocpd.ar_app.ml.ObjectDetectionModel
 import com.google.ar.sceneform.math.Quaternion
 
 
@@ -130,6 +130,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private lateinit var imageProcessor: ImageProcessor
     private var isCubePlaced = false
     private val nodeList = mutableListOf<Nodes>()
+    private lateinit var objectDetectionModel: ObjectDetectionModel
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,16 +143,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         // Carga el modelo desde los assets
-        val model = loadModelFile("ssd_mobilenet_v1_1_metadata_1.tflite")
-        tflite = Interpreter(model)
-
-        // Inicializa el procesador de imagen
-        imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(300, 300, ResizeOp.ResizeMethod.BILINEAR))
-            .build()
-
-        // Carga las etiquetas si están disponibles
-        labels = assets.open("labels.txt").bufferedReader().readLines()
+        objectDetectionModel = ObjectDetectionModel(this)
     }
 
     // Función para cargar el archivo del modelo
@@ -166,7 +158,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     override fun onDestroy() {
         gyroscopeListener?.let { sensorManager.unregisterListener(it) }
-        tflite.close()
+        objectDetectionModel.close()
         super.onDestroy()
     }
 
@@ -356,53 +348,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private fun detectObjects() {
         val frame = arSceneView.arFrame ?: return
         copyPixelFromView { bitmap ->
-            // Preprocesar la imagen
-            val resizedBitmap = resizeBitmap(bitmap, 300, 300)
-            val tensorImage = TensorImage.fromBitmap(resizedBitmap)
-            val processedImage = imageProcessor.process(tensorImage)
-
-            // Crear buffers de entrada y salida
-            val inputBuffer = processedImage.buffer // Buffer de entrada con la imagen procesada
-            val outputLocations = Array(1) { Array(10) { FloatArray(4) } } // Coordenadas de los bounding boxes
-            val outputClasses = Array(1) { FloatArray(10) } // Clases de los objetos detectados
-            val outputScores = Array(1) { FloatArray(10) } // Confianza de las detecciones
-            val outputCount = FloatArray(1) // Número de detecciones
-
-            // Ejecutar el modelo
-            val outputs = mapOf(
-                0 to outputLocations,
-                1 to outputClasses,
-                2 to outputScores,
-                3 to outputCount
-            )
-            tflite.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputs)
-
-            // Procesar las detecciones
-            val count = outputCount[0].toInt()
-            for (i in 0 until count) {
-                val score = outputScores[0][i]
-                if (score > 0.5) { // Filtrar detecciones con alta confianza
-                    val labelIndex = outputClasses[0][i].toInt()
-                    val label = labels.getOrNull(labelIndex) ?: continue // Obtener el label del objeto
-
-                    // Filtrar solo por el label deseado
-                    if (label == "keyboard"&& !isCubePlaced) { // Reemplaza "desired_label" con el label que necesitas
-                        val boundingBox = RectF(
-                            outputLocations[0][i][1] * resizedBitmap.width,  // left
-                            outputLocations[0][i][0] * resizedBitmap.height, // top
-                            outputLocations[0][i][3] * resizedBitmap.width,  // right
-                            outputLocations[0][i][2] * resizedBitmap.height  // bottom
-                        )
-
-                        val detectedObject = DetectedObject(
-                            boundingBox = boundingBox,
-                            labels = listOf(label),
-                            confidence = score
-                        )
-
-                        handleDetectedObject(detectedObject)
-                        isCubePlaced = true
-                    }
+            val detections = objectDetectionModel.detectObjects(bitmap)
+            detections.forEach { detectedObject ->
+                if (detectedObject.label == "keyboard" && !isCubePlaced) {
+                    handleDetectedObject(detectedObject)
+                    isCubePlaced = true
                 }
             }
         }
@@ -414,9 +364,8 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     private fun handleDetectedObject(detectedObject: DetectedObject) {
-        Log.d(TAG, "Objeto detectado: ${detectedObject.labels[0]}")
-        Toast.makeText(this, "Detectado: ${detectedObject.labels[0]}", Toast.LENGTH_SHORT).show()
-
+        Log.d(TAG, "Objeto detectado: ${detectedObject.label}")
+        Toast.makeText(this, "Detectado: ${detectedObject.label}", Toast.LENGTH_SHORT).show()
         // Crear un anchor y dibujar un cubo en la posición detectada.
         val anchor = createAnchorFromObject(detectedObject) ?: return
         createNodeAndAddToScene(
