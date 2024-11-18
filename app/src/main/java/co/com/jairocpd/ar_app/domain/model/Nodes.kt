@@ -72,6 +72,8 @@ import com.google.ar.sceneform.ux.BaseTransformableNode
 import com.google.ar.sceneform.ux.TransformableNode
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.reflect.KClass
 import kotlin.text.Typography.leftGuillemet
 import kotlin.text.Typography.rightGuillemet
@@ -195,7 +197,36 @@ sealed class MaterialNode(
     fun update(block: (MaterialProperties.() -> Unit) = {}) {
         properties.update(renderable?.material, block)
     }
+
+    /**
+     * Actualiza la rotación del nodo instantáneamente en base a los valores del giroscopio.
+     */
+    fun setRotationFromGyroscope(x: Float, y: Float, z: Float) {
+        // Convierte los valores del giroscopio (en radianes) a un Quaternion
+        localRotation = eulerToQuaternion(x, y, z)
+    }
 }
+
+
+fun eulerToQuaternion(roll: Float, pitch: Float, yaw: Float): Quaternion {
+    val cy = cos(yaw / 2.0).toFloat()
+    val sy = sin(yaw / 2.0).toFloat()
+    val cp = cos(pitch / 2.0).toFloat()
+    val sp = sin(pitch / 2.0).toFloat()
+    val cr = cos(roll / 2.0).toFloat()
+    val sr = sin(roll / 2.0).toFloat()
+
+    val x = sr * cp * cy - cr * sp * sy
+    val y = cr * sp * cy + sr * cp * sy
+    val z = cr * cp * sy - sr * sp * cy
+    val w = cr * cp * cy + sr * sp * sy
+
+    return Quaternion(x, y, z, w)
+}
+
+
+
+
 
 
 class Cube(

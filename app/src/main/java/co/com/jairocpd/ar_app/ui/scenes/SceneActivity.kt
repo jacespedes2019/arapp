@@ -87,6 +87,11 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import java.io.FileInputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+
 
 class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inflate) {
 
@@ -99,15 +104,15 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
             setOf(
                 colorValue,
                 colorLabel,
-                metallicValue,
-                metallicLabel,
-                roughnessValue,
-                roughnessLabel,
-                reflectanceValue,
-                reflectanceLabel,
             )
         }
     }
+
+    //Giroscopio
+    private lateinit var sensorManager: SensorManager
+    private var gyroscopeSensor: Sensor? = null
+    private var gyroscopeListener: SensorEventListener? = null
+
 
 
     override val arSceneView: ArSceneView get() = binding.arSceneView
@@ -123,6 +128,8 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private lateinit var labels: List<String>
     private lateinit var imageProcessor: ImageProcessor
     private var isCubePlaced = false
+    private val nodeList = mutableListOf<Nodes>()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,6 +137,9 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         initNodeBottomSheet()
         initAr()
         initWithIntent(intent)
+        // Inicializar el SensorManager y el sensor del giroscopio
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         // Carga el modelo desde los assets
         val model = loadModelFile("ssd_mobilenet_v1_1_metadata_1.tflite")
         tflite = Interpreter(model)
@@ -155,8 +165,10 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     override fun onDestroy() {
         super.onDestroy()
+        gyroscopeListener?.let { sensorManager.unregisterListener(it) }
         tflite.close() // Asegúrate de cerrar el modelo para liberar recursos.
     }
+
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
@@ -246,13 +258,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
         body.apply {
             colorValue.setOnColorChangeListener { focusedMaterialNode()?.update { color = it } }
-            metallicValue.progress = MaterialProperties.DEFAULT.metallic
-            metallicValue.setOnSeekBarChangeListener(SimpleSeekBarChangeListener { focusedMaterialNode()?.update { metallic = it } })
-            roughnessValue.progress = MaterialProperties.DEFAULT.roughness
-            roughnessValue.setOnSeekBarChangeListener(SimpleSeekBarChangeListener { focusedMaterialNode()?.update { roughness = it } })
-            reflectanceValue.progress = MaterialProperties.DEFAULT.reflectance
-            reflectanceValue.setOnSeekBarChangeListener(SimpleSeekBarChangeListener { focusedMaterialNode()?.update { reflectance = it } })
-        }
+            }
     }
 
     private fun focusedMaterialNode() = (coordinator.focusedNode as? MaterialNode)
@@ -260,9 +266,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private fun materialProperties() = with(bottomSheetNode.body) {
         MaterialProperties(
             color = if (focusedMaterialNode() != null) colorValue.getColor() else bottomSheetScene.body.colorValue.getColor(),
-            metallic = metallicValue.progress,
-            roughness = roughnessValue.progress,
-            reflectance = reflectanceValue.progress,
         )
     }
 
@@ -289,30 +292,37 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
 
         if(isCubePlaced) {
+            // Se tocó una parte vacía de la pantalla
+            clearAllObjects()
             coordinator.selectNode(null)
             return
         }
-        else {
-            frame.hitTest(motionEvent).firstOrNull {
-                val trackable = it.trackable
-                when {
-                    trackable is Plane && trackable.isPoseInPolygon(it.hitPose) -> true
-                    trackable is DepthPoint -> true
-                    trackable is Point -> true
-                    else -> false
-                }
-            }?.let { createNodeAndAddToScene(anchor = { it.createAnchor() }) } ?: coordinator.selectNode(null)
-        }
-
-
     }
+
+    private fun clearAllObjects() {
+        // Elimina cada nodo de la escena
+        nodeList.forEach { it.detach() }
+        nodeList.clear() // Limpia la lista
+
+        // Restablece la bandera
+        isCubePlaced = false
+
+        // Mensaje opcional
+        Toast.makeText(this, "Todos los objetos han sido eliminados", Toast.LENGTH_SHORT).show()
+    }
+
+
 
     private fun createNodeAndAddToScene(anchor: () -> Anchor, focus: Boolean = true) {
-        when (model.selection.value) {
+        val node = when (model.selection.value) {
             Cube::class -> Cube(this, materialProperties(), coordinator, settings)
             else -> return
-        }.attach(anchor(), arSceneView.scene, focus)
+        }
+
+        node.attach(anchor(), arSceneView.scene, focus)
+        nodeList.add(node) // Agrega el nodo a la lista
     }
+
 
     private fun onArUpdate() {
         val frame = arSceneView.arFrame
@@ -510,6 +520,9 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     bottomSheetScene.root.tag = false
                     sceneBehavior.state = STATE_EXPANDED
                 }
+                // Detener el sensor del giroscopio cuando no hay nodo seleccionado
+                gyroscopeListener?.let { sensorManager.unregisterListener(it) }
+                gyroscopeListener = null
             }
             coordinator.selectedNode -> {
                 with(bottomSheetNode.header) {
@@ -518,9 +531,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                 with(bottomSheetNode.body) {
                     (node as? MaterialNode)?.properties?.let {
                         colorValue.setColor(it.color)
-                        metallicValue.progress = it.metallic
-                        roughnessValue.progress = it.roughness
-                        reflectanceValue.progress = it.reflectance
                     }
                 }
                 val materialVisibility = if (node is MaterialNode) VISIBLE else GONE
@@ -530,8 +540,38 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     sceneBehavior.state = STATE_COLLAPSED
                     bottomSheetScene.root.tag = true
                 }
+                // Activar el control del giroscopio
+                activateGyroscopeControl(node)
             }
             else -> Unit
         }
     }
+
+    private fun activateGyroscopeControl(node: Nodes) {
+        if (node !is MaterialNode) return // Solo aplicamos el control a MaterialNodes
+
+        gyroscopeListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent?) {
+                if (event == null || event.sensor.type != Sensor.TYPE_GYROSCOPE) return
+
+                // Lee los valores actuales del giroscopio
+                val rotationRateX = event.values[0] // Velocidad angular alrededor del eje X
+                val rotationRateY = event.values[1] // Velocidad angular alrededor del eje Y
+                val rotationRateZ = event.values[2] // Velocidad angular alrededor del eje Z
+
+                // Aplica los valores directamente al nodo
+                node.setRotationFromGyroscope(rotationRateX, rotationRateY, rotationRateZ)
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+
+        // Registrar el listener del giroscopio
+        gyroscopeSensor?.let {
+            sensorManager.registerListener(gyroscopeListener, it, SensorManager.SENSOR_DELAY_UI)
+        }
+    }
+
+
+
 }
