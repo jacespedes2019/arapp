@@ -1,6 +1,6 @@
 <resources>
 
-    <string name="app_name">AR Toolbox</string>
+    <string name="app_name">AR obj detection</string>
 
     <string name="scene_viewer_native_uri">https://arvr.google.com/scene-viewer/1.1</string>
     <string name="scene_viewer_native_model">https://simon-marquis.fr/ar/Astronaut.glb</string>
