@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorBackground"
+    android:clickable="true"
+    android:paddingLeft="@dimen/bottom_sheet_horizontal_padding"
+    android:paddingRight="@dimen/bottom_sheet_horizontal_padding"
+    android:paddingBottom="@dimen/material_unit_1"
+    tools:ignore="KeyboardInaccessibleWidget,Overdraw"
+    tools:showIn="@layout/bottom_sheet_node">
+
+    <TextView
+        android:id="@+id/colorLabel"
+        style="@style/PropertyLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/material_unit_1"
+        android:text="@string/entry_color_label"
+        app:layout_constraintBottom_toTopOf="@+id/colorValue"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <co.com.jairocpd.ar_app.ui.components.ColorSeekBar
+        android:id="@+id/colorValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/material_unit_1"
+        android:layout_marginRight="@dimen/material_unit_1"
+        app:colorSeeds="@array/colors"
+        app:layout_constraintBottom_toTopOf="@+id/positionLabel"
+        app:layout_constraintTop_toBottomOf="@+id/colorLabel" />
+
+    <TextView
+        android:id="@+id/positionLabel"
+        style="@style/PropertyLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/material_unit_1"
+        android:text="@string/entry_position_label"
+        app:layout_constraintBottom_toTopOf="@+id/positionValue"
+        app:layout_constraintTop_toBottomOf="@+id/colorValue" />
+
+    <TextView
+        android:id="@+id/positionValue"
+        style="@style/PropertyValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/rotationLabel"
+        app:layout_constraintTop_toBottomOf="@+id/positionLabel" />
+
+    <TextView
+        android:id="@+id/rotationLabel"
+        style="@style/PropertyLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/material_unit_1"
+        android:text="@string/entry_rotation_label"
+        app:layout_constraintBottom_toTopOf="@+id/rotationValue"
+        app:layout_constraintTop_toBottomOf="@+id/positionValue" />
+
+    <TextView
+        android:id="@+id/rotationValue"
+        style="@style/PropertyValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/scaleLabel"
+        app:layout_constraintTop_toBottomOf="@+id/rotationLabel" />
+
+    <TextView
+        android:id="@+id/scaleLabel"
+        style="@style/PropertyLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/material_unit_1"
+        android:text="@string/entry_scale_label"
+        app:layout_constraintBottom_toTopOf="@+id/scaleValue"
+        app:layout_constraintTop_toBottomOf="@+id/rotationValue" />
+
+    <TextView
+        android:id="@+id/scaleValue"
+        style="@style/PropertyValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/scaleLabel" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

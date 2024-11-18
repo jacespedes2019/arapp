@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
 
@@ -36,67 +35,45 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
-        compose = true
+        mlModelBinding = true
+        viewBinding = true
+    }
+
+    androidResources {
+        noCompress("tflite")
     }
 }
 
+
 dependencies {
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.browser)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.coordinatorlayout)
+    implementation(libs.androidx.core)
+    implementation(libs.androidx.fragment)
+    implementation(libs.androidx.lifecycle.livedata)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.preference)
+    implementation(libs.google.android.material)
+    implementation(libs.google.ar.core)
+    implementation(libs.google.ar.sceneform.assets)
+    implementation(libs.google.ar.sceneform.core)
+    implementation(libs.google.ar.sceneform.rendering)
+    implementation(libs.google.ar.sceneform.sceneformBase)
+    implementation(libs.google.ar.sceneform.ux)
+    implementation(libs.google.oss)
+
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 
-    //Dependency injection Hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 
-    //Icons extended used for the field forms
-    implementation(libs.androidx.material.icons.extended)
+    implementation (libs.tensorflow.lite)
+    implementation (libs.tensorflow.lite.support)
 
-    implementation (libs.arcore)
-    testImplementation (libs.mockitocore)
-    testImplementation (libs.mockitojunitjupiter)
-
-    //            Compose Libraries
-    implementation(libs.voyager.navigator)
-    implementation(libs.voyager.screenmodel)
-    implementation(libs.voyager.bottom.sheet.navigator)
-    implementation(libs.voyager.voyager.transitions)
-    implementation(libs.voyager.lifecycle.kmp)
-    implementation(libs.compose.material3)
-    implementation(libs.androidx.runtime.livedata)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    //            DI
-    implementation(libs.voyager.koin)
-    implementation(libs.koin.compose)
-    api(libs.koin.core)
-    implementation(project.dependencies.platform(libs.koin.bom))
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-
-    //            Coroutines
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.core)
-
-    //Retrofit
-    implementation(libs.retrofit)
-    implementation(libs.converter.moshi)
-    implementation(libs.logging.interceptor)
-
-    //Persistence
-    implementation(libs.moshi.kotlin)
-    ksp(libs.moshi.kotlin.codegen)
+    // MLKit
+    implementation (libs.mlkitobjectdetectioncustom)
+    implementation (libs.objectdetection)
 }
