@@ -1,17 +1,11 @@
 package co.com.jairocpd.ar_app.ui.scenes
 
 import android.content.ContentValues.TAG
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.os.Bundle
 import android.os.Handler
-import android.text.Editable
-import android.text.InputType
-import android.text.TextWatcher
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.View
@@ -20,25 +14,18 @@ import android.view.View.VISIBLE
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.view.ContextThemeWrapper
-import androidx.core.net.toUri
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.config.Settings
 import co.com.jairocpd.ar_app.databinding.ActivitySceneBinding
-import co.com.jairocpd.ar_app.databinding.DialogInputBinding
 import co.com.jairocpd.ar_app.domain.model.Coordinator
 import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
 import co.com.jairocpd.ar_app.domain.model.Nodes
 import co.com.jairocpd.ar_app.ui.ar.ArActivity
 import co.com.jairocpd.ar_app.util.MaterialProperties
-import co.com.jairocpd.ar_app.util.SimpleSeekBarChangeListener
 import co.com.jairocpd.ar_app.util.behavior
 import co.com.jairocpd.ar_app.util.format
 import co.com.jairocpd.ar_app.util.formatDistance
-import co.com.jairocpd.ar_app.util.formatRotation
-import co.com.jairocpd.ar_app.util.formatTranslation
 import co.com.jairocpd.ar_app.util.toArColor
 import co.com.jairocpd.ar_app.util.toggle
 import co.com.jairocpd.ar_app.util.update
@@ -47,8 +34,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPS
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
 import com.google.ar.core.Anchor
-import com.google.ar.core.AugmentedImage
-import com.google.ar.core.AugmentedImageDatabase
 import com.google.ar.core.Config
 import com.google.ar.core.Config.AugmentedFaceMode
 import com.google.ar.core.Config.CloudAnchorMode
@@ -57,10 +42,6 @@ import com.google.ar.core.Config.FocusMode
 import com.google.ar.core.Config.LightEstimationMode
 import com.google.ar.core.Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
 import com.google.ar.core.Config.UpdateMode
-import com.google.ar.core.DepthPoint
-import com.google.ar.core.Frame
-import com.google.ar.core.Plane
-import com.google.ar.core.Point
 import com.google.ar.core.Pose
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
@@ -75,20 +56,8 @@ import com.google.ar.core.TrackingState.PAUSED
 import com.google.ar.core.TrackingState.STOPPED
 import com.google.ar.core.TrackingState.TRACKING
 import com.google.ar.sceneform.ArSceneView
-import com.google.ar.sceneform.HitTestResult
 import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.PlaneRenderer
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.io.FileInputStream
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import co.com.jairocpd.ar_app.domain.model.DetectedObject
 import co.com.jairocpd.ar_app.ml.ObjectDetectionModel
 import co.com.jairocpd.ar_app.util.GyroscopeController
@@ -113,10 +82,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     //Giroscopio
     private lateinit var gyroscopeController: GyroscopeController
 
-    private lateinit var sensorManager: SensorManager
-    private var gyroscopeSensor: Sensor? = null
-    private var gyroscopeListener: SensorEventListener? = null
-
 
 
     override val arSceneView: ArSceneView get() = binding.arSceneView
@@ -128,9 +93,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private val bottomSheetNode get() = binding.bottomSheetNode
 
     // Inicializa el modelo
-    private lateinit var tflite: Interpreter
-    private lateinit var labels: List<String>
-    private lateinit var imageProcessor: ImageProcessor
     private var isCubePlaced = false
     private val nodeList = mutableListOf<Nodes>()
     private lateinit var objectDetectionModel: ObjectDetectionModel
@@ -358,11 +320,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                 }
             }
         }
-    }
-
-
-    private fun resizeBitmap(bitmap: Bitmap, width: Int, height: Int): Bitmap {
-        return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
     private fun handleDetectedObject(detectedObject: DetectedObject) {
