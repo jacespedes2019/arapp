@@ -47,5 +47,4 @@
         app:colorSeeds="@array/colors"
         app:layout_constraintTop_toBottomOf="@+id/colorLabel" />
 
-
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -164,9 +164,21 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         gyroscopeListener?.let { sensorManager.unregisterListener(it) }
-        tflite.close() // Asegúrate de cerrar el modelo para liberar recursos.
+        tflite.close()
+        super.onDestroy()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        restartApp()
+    }
+
+    private fun restartApp() {
+        val intent = Intent(this, SceneActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+        finish() // Finaliza la actividad actual para evitar que quede en el historial
     }
 
 
