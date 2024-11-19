@@ -93,8 +93,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private val bottomSheetNode get() = binding.bottomSheetNode
 
     // Inicializa el modelo
-    private var isCubePlaced = false
-    private val nodeList = mutableListOf<Nodes>()
     private lateinit var objectDetectionModel: ObjectDetectionModel
 
 
@@ -193,7 +191,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
 
         body.apply {
-            cube.setOnClickListener { model.selection.value = Cube::class }
+            cube.setOnClickListener { Cube::class }
             colorValue.setOnColorChangeListener { color ->
                 arSceneView.planeRenderer.material?.thenAccept {
                     it.setFloat3(PlaneRenderer.MATERIAL_COLOR, color.toArColor())
@@ -222,7 +220,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         header.apply {
             root.setOnClickListener { coordinator.selectNode(null) }
             delete.setOnClickListener { coordinator.focusedNode?.detach()
-                isCubePlaced = false}
+                model.setCubePlaced(false)}
         }
 
         body.apply {
@@ -260,7 +258,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
             return
         }
 
-        if(isCubePlaced) {
+        if(model.isCubePlaced.value== true) {
             // Se tocó una parte vacía de la pantalla
             clearAllObjects()
             coordinator.selectNode(null)
@@ -270,11 +268,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     private fun clearAllObjects() {
         // Elimina cada nodo de la escena
-        nodeList.forEach { it.detach() }
-        nodeList.clear() // Limpia la lista
+        model.nodes.value?.forEach { it.detach() }
+        model.clearAllNodes()
 
         // Restablece la bandera
-        isCubePlaced = false
+        model.setCubePlaced(false)
 
         // Mensaje opcional
         Toast.makeText(this, "Todos los objetos han sido eliminados", Toast.LENGTH_SHORT).show()
@@ -293,7 +291,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         // Establecer la rotación inicial del nodo en 0
         node.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 0f)
 
-        nodeList.add(node) // Agrega el nodo a la lista
+        model.addNode(node)
     }
 
 
@@ -314,9 +312,9 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         copyPixelFromView { bitmap ->
             val detections = objectDetectionModel.detectObjects(bitmap)
             detections.forEach { detectedObject ->
-                if (detectedObject.label == "keyboard" && !isCubePlaced) {
+                if (detectedObject.label == "keyboard" && model.isCubePlaced.value==false) {
                     handleDetectedObject(detectedObject)
-                    isCubePlaced = true
+                    model.setCubePlaced(true)
                 }
             }
         }
