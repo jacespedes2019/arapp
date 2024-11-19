@@ -17,7 +17,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Observer
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.config.Settings
-import co.com.jairocpd.ar_app.data.api.RetrofitInstance
+import co.com.jairocpd.ar_app.config.RetrofitInstance
 import co.com.jairocpd.ar_app.data.repository.RandomUserRepository
 import co.com.jairocpd.ar_app.databinding.ActivitySceneBinding
 import co.com.jairocpd.ar_app.shared.ui.Coordinator

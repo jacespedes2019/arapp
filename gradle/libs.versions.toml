@@ -1,6 +1,8 @@
 [versions]
 agp = "8.7.2"
 converterMoshi = "2.9.0"
+mockitoCore = "5.2.0"
+mockitoKotlin = "4.1.0"
 moshiKotlin = "1.14.0"
 moshiKotlinCodegen = "1.14.0"
 loggingInterceptor = "4.9.1"
@@ -54,7 +56,10 @@ google-ar-sceneform-rendering = { module = "com.google.ar.sceneform:rendering", 
 google-ar-sceneform-sceneformBase = { module = "com.google.ar.sceneform:sceneform-base", version.ref = "google-ar-sceneform" }
 google-ar-sceneform-ux = { module = "com.google.ar.sceneform.ux:sceneform-ux", version.ref = "google-ar-sceneform" }
 junit = { module = "junit:junit", version.ref = "junit" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 mlkitobjectdetectioncustom = { module = "com.google.mlkit:object-detection-custom", version.ref = "objectDetectionCustomVersion" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 objectdetection = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterMoshi" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }

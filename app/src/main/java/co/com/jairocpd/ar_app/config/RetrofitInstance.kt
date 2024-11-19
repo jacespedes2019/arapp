@@ -1,5 +1,6 @@
-package co.com.jairocpd.ar_app.data.api
+package co.com.jairocpd.ar_app.config
 
+import co.com.jairocpd.ar_app.data.api.RandomUserApi
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
