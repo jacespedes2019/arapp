@@ -17,7 +17,7 @@ import androidx.activity.viewModels
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.config.Settings
 import co.com.jairocpd.ar_app.databinding.ActivitySceneBinding
-import co.com.jairocpd.ar_app.domain.model.Coordinator
+import co.com.jairocpd.ar_app.shared.ui.Coordinator
 import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
 import co.com.jairocpd.ar_app.domain.model.Nodes
