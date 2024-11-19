@@ -114,7 +114,7 @@ abstract class ArActivity<T : ViewBinding>(private val inflate: (LayoutInflater)
 
     open fun onArResumed() = Unit
 
-    private fun hasCameraPermission() = ActivityCompat.checkSelfPermission(this, CAMERA) == PERMISSION_GRANTED
+    internal fun hasCameraPermission() = ActivityCompat.checkSelfPermission(this, CAMERA) == PERMISSION_GRANTED
 
     private fun requestCameraPermission() {
         if (!hasCameraPermission()) {

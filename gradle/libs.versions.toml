@@ -1,6 +1,7 @@
 [versions]
 agp = "8.7.2"
 converterMoshi = "2.9.0"
+coreTestingVersion = "2.1.0"
 mockitoCore = "5.2.0"
 mockitoKotlin = "4.1.0"
 moshiKotlin = "1.14.0"
@@ -28,11 +29,13 @@ junit = "4.13.2"
 kotlin = "2.0.21"
 objectDetection = "17.0.2"
 objectDetectionCustomVersion = "17.0.2"
+robolectric = "4.10"
 spotless = "6.25.0"
 tensorflowLite = "2.9.0"
 tensorflowLiteSupport = "0.3.1"
 viewbinding = "8.7.2"
 objectDetectionCustom = "17.0.2"
+coreKtx = "1.6.1"
 
 
 [libraries]
@@ -41,6 +44,7 @@ androidx-browser = { module = "androidx.browser:browser", version.ref = "android
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
 androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "androidx-coordinatorlayout" }
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "coreTestingVersion" }
 androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "androidx-fragment" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidx-lifecycle" }
@@ -68,8 +72,10 @@ converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.r
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLite" }
 tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
+androidx-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

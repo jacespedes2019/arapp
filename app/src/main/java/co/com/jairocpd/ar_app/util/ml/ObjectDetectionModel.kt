@@ -31,7 +31,7 @@ class ObjectDetectionModel(private val context: Context) {
         labels = context.assets.open("labels.txt").bufferedReader().readLines()
     }
 
-    private fun loadModelFile(modelPath: String): MappedByteBuffer {
+    fun loadModelFile(modelPath: String): MappedByteBuffer {
         val assetFileDescriptor = context.assets.openFd(modelPath)
         val fileInputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
         val fileChannel = fileInputStream.channel

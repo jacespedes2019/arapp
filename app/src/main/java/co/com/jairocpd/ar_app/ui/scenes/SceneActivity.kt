@@ -77,7 +77,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private val viewModelFactory by lazy { SceneViewModelFactory(application, repository) }
 
     // Crea el ViewModel usando el Factory
-    private val model: SceneViewModel by viewModels { viewModelFactory }
+    internal val model: SceneViewModel by viewModels { viewModelFactory }
     private val settings by lazy { Settings.instance(this) }
 
     private val setOfMaterialViews by lazy {

@@ -43,6 +43,7 @@ android {
     androidResources {
         noCompress("tflite")
     }
+
 }
 
 
@@ -65,11 +66,15 @@ dependencies {
     implementation(libs.google.ar.sceneform.sceneformBase)
     implementation(libs.google.ar.sceneform.ux)
     implementation(libs.google.oss)
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.junit)
     testImplementation (libs.mockito.core)
     testImplementation (libs.mockito.kotlin)
     testImplementation (libs.kotlinx.coroutines.test)
+    testImplementation (libs.androidx.core.testing)
+    testImplementation (libs.robolectric)
+
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
