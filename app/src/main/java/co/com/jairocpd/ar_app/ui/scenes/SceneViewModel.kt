@@ -4,16 +4,20 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import co.com.jairocpd.ar_app.data.repository.RandomUserRepository
 import co.com.jairocpd.ar_app.domain.model.Nodes
 import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
+import co.com.jairocpd.ar_app.domain.model.RandomUser
 import co.com.jairocpd.ar_app.util.MaterialProperties
 import com.google.ar.core.Anchor
 import com.google.ar.core.TrackingState
 import com.google.ar.core.TrackingFailureReason
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
-class SceneViewModel(application: Application) : AndroidViewModel(application) {
+class SceneViewModel(application: Application, private val repository: RandomUserRepository) : AndroidViewModel(application) {
     // Selection state
     private val _selection = MutableLiveData<KClass<out Nodes>>(Cube::class)
     val selection: LiveData<KClass<out Nodes>> = _selection
@@ -40,6 +44,26 @@ class SceneViewModel(application: Application) : AndroidViewModel(application) {
     // Material properties state
     private val _currentMaterialProperties = MutableLiveData(MaterialProperties.DEFAULT)
     val currentMaterialProperties: LiveData<MaterialProperties> = _currentMaterialProperties
+
+    private val _randomUser = MutableLiveData<RandomUser?>()
+    val randomUser: LiveData<RandomUser?> = _randomUser
+
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
+
+
+    fun fetchRandomUser() {
+        viewModelScope.launch {
+            val result = repository.fetchRandomUser()
+            result.onSuccess { user ->
+                _randomUser.value = user
+                _errorMessage.value = null // Limpia mensajes de error
+            }.onFailure { exception ->
+                _randomUser.value = null
+                _errorMessage.value = exception.message // Actualiza mensaje de error
+            }
+        }
+    }
 
     // Node operations
     fun addNode(node: Nodes) {

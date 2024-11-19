@@ -14,8 +14,11 @@ import android.view.View.VISIBLE
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.lifecycle.Observer
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.config.Settings
+import co.com.jairocpd.ar_app.data.api.RetrofitInstance
+import co.com.jairocpd.ar_app.data.repository.RandomUserRepository
 import co.com.jairocpd.ar_app.databinding.ActivitySceneBinding
 import co.com.jairocpd.ar_app.shared.ui.Coordinator
 import co.com.jairocpd.ar_app.domain.model.Cube
@@ -67,7 +70,14 @@ import com.google.ar.sceneform.math.Quaternion
 class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inflate) {
 
     private val coordinator by lazy { Coordinator(this, ::onArTap, ::onNodeSelected, ::onNodeFocused) }
-    private val model: SceneViewModel by viewModels()
+    //private val model: SceneViewModel by viewModels()
+
+    // Crea el repositorio y el ViewModelFactory
+    private val repository by lazy { RandomUserRepository(RetrofitInstance.api) }
+    private val viewModelFactory by lazy { SceneViewModelFactory(application, repository) }
+
+    // Crea el ViewModel usando el Factory
+    private val model: SceneViewModel by viewModels { viewModelFactory }
     private val settings by lazy { Settings.instance(this) }
 
     private val setOfMaterialViews by lazy {
@@ -116,6 +126,16 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
         // Carga el modelo desde los assets
         objectDetectionModel = ObjectDetectionModel(this)
+
+        model.randomUser.observe(this, Observer { user ->
+            if (user != null) {
+                Toast.makeText(this, "Name: ${user.fullName}, Gender: ${user.gender}", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Failed to fetch user", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        model.fetchRandomUser()
     }
 
     override fun onDestroy() {
@@ -275,7 +295,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         model.setCubePlaced(false)
 
         // Mensaje opcional
-        Toast.makeText(this, "Todos los objetos han sido eliminados", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "All objects deleted", Toast.LENGTH_SHORT).show()
     }
 
 
@@ -321,8 +341,12 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     private fun handleDetectedObject(detectedObject: DetectedObject) {
-        Log.d(TAG, "Objeto detectado: ${detectedObject.label}")
-        Toast.makeText(this, "Detectado: ${detectedObject.label}", Toast.LENGTH_SHORT).show()
+        var name="No Name"
+        if(model.randomUser.value!=null){
+            name= model.randomUser.value!!.fullName
+        }
+        Log.d(TAG, "${name} detect: ${detectedObject.label}")
+        Toast.makeText(this, "${name} detected: ${detectedObject.label}", Toast.LENGTH_SHORT).show()
         // Crear un anchor y dibujar un cubo en la posición detectada.
         val anchor = createAnchorFromObject(detectedObject) ?: return
         createNodeAndAddToScene(

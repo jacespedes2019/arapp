@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+
 }
 
 android {
@@ -76,4 +77,14 @@ dependencies {
     // MLKit
     implementation (libs.mlkitobjectdetectioncustom)
     implementation (libs.objectdetection)
+
+    //Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.moshi)
+    implementation(libs.logging.interceptor)
+
+    //Persistence
+    implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.kotlin.codegen)
+
 }
