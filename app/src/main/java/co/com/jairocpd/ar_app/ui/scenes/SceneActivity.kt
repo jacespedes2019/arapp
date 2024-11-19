@@ -2,6 +2,7 @@ package co.com.jairocpd.ar_app.ui.scenes
 
 import android.content.ContentValues.TAG
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
@@ -132,15 +133,12 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     override fun onDestroy() {
+        arSceneView.destroy()
         gyroscopeController.stop()
         objectDetectionModel.close()
         super.onDestroy()
     }
 
-    override fun onPause() {
-        super.onPause()
-        restartApp()
-    }
 
     private fun restartApp() {
         val intent = Intent(this, SceneActivity::class.java)
@@ -148,11 +146,28 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         startActivity(intent)
         finish() }
 
+    override fun onPause() {
+        super.onPause()
+
+        // Verifica si el permiso de la cámara ya fue concedido
+        val cameraPermissionGranted = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+        if (!cameraPermissionGranted) {
+            // No cierres la aplicación porque está solicitando permisos
+            Log.d("SceneActivity", "No se cierra la app porque está solicitando permisos.")
+            return
+        }
+
+        // Finaliza la actividad al enviarla a segundo plano (solo si no hay diálogo de permisos)
+        finishAffinity()
+    }
+
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         initWithIntent(intent)
     }
+
 
     override fun onBackPressed() {
         if (coordinator.selectedNode != null) {
