@@ -2,6 +2,7 @@ package co.com.jairocpd.ar_app.ui.scenes
 
 import android.content.ContentValues.TAG
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
@@ -151,6 +152,22 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
         finish() // Finaliza la actividad actual para evitar que quede en el historial
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        // Verifica si el permiso de la cámara ya fue concedido
+        val cameraPermissionGranted = checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+        if (!cameraPermissionGranted) {
+            // No cierres la aplicación porque está solicitando permisos
+            Log.d("SceneActivity", "No se cierra la app porque está solicitando permisos.")
+            return
+        }
+
+        // Finaliza la actividad al enviarla a segundo plano (solo si no hay diálogo de permisos)
+        finishAffinity()
     }
 
 
