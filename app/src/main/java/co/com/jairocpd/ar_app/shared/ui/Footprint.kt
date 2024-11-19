@@ -1,4 +1,4 @@
-package co.com.jairocpd.ar_app.domain.model
+package co.com.jairocpd.ar_app.shared.ui
 
 import android.content.Context
 import com.google.ar.sceneform.Node

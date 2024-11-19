@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.view.MenuItem
 import androidx.preference.PreferenceManager
-import co.com.jairocpd.ar_app.domain.model.Footprint
+import co.com.jairocpd.ar_app.shared.ui.Footprint
 import co.com.jairocpd.ar_app.util.MaterialProperties
 import co.com.jairocpd.ar_app.util.graphics.PointCloud.makePointCloud
 import co.com.jairocpd.ar_app.util.Singleton

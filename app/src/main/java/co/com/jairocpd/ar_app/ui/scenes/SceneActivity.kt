@@ -1,17 +1,11 @@
 package co.com.jairocpd.ar_app.ui.scenes
 
 import android.content.ContentValues.TAG
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.os.Bundle
 import android.os.Handler
-import android.text.Editable
-import android.text.InputType
-import android.text.TextWatcher
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.View
@@ -20,27 +14,18 @@ import android.view.View.VISIBLE
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.view.ContextThemeWrapper
-import androidx.core.net.toUri
 import co.com.jairocpd.ar_app.R
 import co.com.jairocpd.ar_app.config.Settings
 import co.com.jairocpd.ar_app.databinding.ActivitySceneBinding
-import co.com.jairocpd.ar_app.databinding.DialogInputBinding
-import co.com.jairocpd.ar_app.domain.model.Coordinator
+import co.com.jairocpd.ar_app.shared.ui.Coordinator
 import co.com.jairocpd.ar_app.domain.model.Cube
 import co.com.jairocpd.ar_app.domain.model.MaterialNode
 import co.com.jairocpd.ar_app.domain.model.Nodes
 import co.com.jairocpd.ar_app.ui.ar.ArActivity
-import co.com.jairocpd.ar_app.util.DetectedObject
 import co.com.jairocpd.ar_app.util.MaterialProperties
-import co.com.jairocpd.ar_app.util.ObjectDetector
-import co.com.jairocpd.ar_app.util.SimpleSeekBarChangeListener
 import co.com.jairocpd.ar_app.util.behavior
 import co.com.jairocpd.ar_app.util.format
 import co.com.jairocpd.ar_app.util.formatDistance
-import co.com.jairocpd.ar_app.util.formatRotation
-import co.com.jairocpd.ar_app.util.formatTranslation
 import co.com.jairocpd.ar_app.util.toArColor
 import co.com.jairocpd.ar_app.util.toggle
 import co.com.jairocpd.ar_app.util.update
@@ -49,8 +34,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPS
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
 import com.google.ar.core.Anchor
-import com.google.ar.core.AugmentedImage
-import com.google.ar.core.AugmentedImageDatabase
 import com.google.ar.core.Config
 import com.google.ar.core.Config.AugmentedFaceMode
 import com.google.ar.core.Config.CloudAnchorMode
@@ -59,10 +42,6 @@ import com.google.ar.core.Config.FocusMode
 import com.google.ar.core.Config.LightEstimationMode
 import com.google.ar.core.Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
 import com.google.ar.core.Config.UpdateMode
-import com.google.ar.core.DepthPoint
-import com.google.ar.core.Frame
-import com.google.ar.core.Plane
-import com.google.ar.core.Point
 import com.google.ar.core.Pose
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
@@ -77,20 +56,11 @@ import com.google.ar.core.TrackingState.PAUSED
 import com.google.ar.core.TrackingState.STOPPED
 import com.google.ar.core.TrackingState.TRACKING
 import com.google.ar.sceneform.ArSceneView
-import com.google.ar.sceneform.HitTestResult
 import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.PlaneRenderer
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.io.FileInputStream
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import co.com.jairocpd.ar_app.domain.model.DetectedObject
+import co.com.jairocpd.ar_app.ml.ObjectDetectionModel
+import co.com.jairocpd.ar_app.util.GyroscopeController
 import com.google.ar.sceneform.math.Quaternion
 
 
@@ -110,9 +80,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     //Giroscopio
-    private lateinit var sensorManager: SensorManager
-    private var gyroscopeSensor: Sensor? = null
-    private var gyroscopeListener: SensorEventListener? = null
+    private lateinit var gyroscopeController: GyroscopeController
 
 
 
@@ -125,11 +93,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private val bottomSheetNode get() = binding.bottomSheetNode
 
     // Inicializa el modelo
-    private lateinit var tflite: Interpreter
-    private lateinit var labels: List<String>
-    private lateinit var imageProcessor: ImageProcessor
-    private var isCubePlaced = false
-    private val nodeList = mutableListOf<Nodes>()
+    private lateinit var objectDetectionModel: ObjectDetectionModel
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,34 +103,24 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         initAr()
         initWithIntent(intent)
         // Inicializar el SensorManager y el sensor del giroscopio
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        gyroscopeController = GyroscopeController(
+            context = this,
+            smoothingFactor = 0.5f // Factor ajustable
+        ) { x, y, z ->
+            // Callback cuando se actualiza la rotación
+            coordinator.focusedNode?.let { node ->
+                if (node is MaterialNode) {
+                    node.setRotationFromGyroscope(x, y, z)
+                }
+            }
+        }
         // Carga el modelo desde los assets
-        val model = loadModelFile("ssd_mobilenet_v1_1_metadata_1.tflite")
-        tflite = Interpreter(model)
-
-        // Inicializa el procesador de imagen
-        imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(300, 300, ResizeOp.ResizeMethod.BILINEAR))
-            .build()
-
-        // Carga las etiquetas si están disponibles
-        labels = assets.open("labels.txt").bufferedReader().readLines()
-    }
-
-    // Función para cargar el archivo del modelo
-    private fun loadModelFile(modelPath: String): MappedByteBuffer {
-        val assetFileDescriptor = assets.openFd(modelPath)
-        val fileInputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
-        val fileChannel = fileInputStream.channel
-        val startOffset = assetFileDescriptor.startOffset
-        val declaredLength = assetFileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        objectDetectionModel = ObjectDetectionModel(this)
     }
 
     override fun onDestroy() {
-        gyroscopeListener?.let { sensorManager.unregisterListener(it) }
-        tflite.close()
+        gyroscopeController.stop()
+        objectDetectionModel.close()
         super.onDestroy()
     }
 
@@ -237,7 +191,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
 
         body.apply {
-            cube.setOnClickListener { model.selection.value = Cube::class }
+            cube.setOnClickListener { Cube::class }
             colorValue.setOnColorChangeListener { color ->
                 arSceneView.planeRenderer.material?.thenAccept {
                     it.setFloat3(PlaneRenderer.MATERIAL_COLOR, color.toArColor())
@@ -266,7 +220,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         header.apply {
             root.setOnClickListener { coordinator.selectNode(null) }
             delete.setOnClickListener { coordinator.focusedNode?.detach()
-                isCubePlaced = false}
+                model.setCubePlaced(false)}
         }
 
         body.apply {
@@ -304,7 +258,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
             return
         }
 
-        if(isCubePlaced) {
+        if(model.isCubePlaced.value== true) {
             // Se tocó una parte vacía de la pantalla
             clearAllObjects()
             coordinator.selectNode(null)
@@ -314,11 +268,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     private fun clearAllObjects() {
         // Elimina cada nodo de la escena
-        nodeList.forEach { it.detach() }
-        nodeList.clear() // Limpia la lista
+        model.nodes.value?.forEach { it.detach() }
+        model.clearAllNodes()
 
         // Restablece la bandera
-        isCubePlaced = false
+        model.setCubePlaced(false)
 
         // Mensaje opcional
         Toast.makeText(this, "Todos los objetos han sido eliminados", Toast.LENGTH_SHORT).show()
@@ -337,7 +291,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         // Establecer la rotación inicial del nodo en 0
         node.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 0f)
 
-        nodeList.add(node) // Agrega el nodo a la lista
+        model.addNode(node)
     }
 
 
@@ -356,67 +310,19 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private fun detectObjects() {
         val frame = arSceneView.arFrame ?: return
         copyPixelFromView { bitmap ->
-            // Preprocesar la imagen
-            val resizedBitmap = resizeBitmap(bitmap, 300, 300)
-            val tensorImage = TensorImage.fromBitmap(resizedBitmap)
-            val processedImage = imageProcessor.process(tensorImage)
-
-            // Crear buffers de entrada y salida
-            val inputBuffer = processedImage.buffer // Buffer de entrada con la imagen procesada
-            val outputLocations = Array(1) { Array(10) { FloatArray(4) } } // Coordenadas de los bounding boxes
-            val outputClasses = Array(1) { FloatArray(10) } // Clases de los objetos detectados
-            val outputScores = Array(1) { FloatArray(10) } // Confianza de las detecciones
-            val outputCount = FloatArray(1) // Número de detecciones
-
-            // Ejecutar el modelo
-            val outputs = mapOf(
-                0 to outputLocations,
-                1 to outputClasses,
-                2 to outputScores,
-                3 to outputCount
-            )
-            tflite.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputs)
-
-            // Procesar las detecciones
-            val count = outputCount[0].toInt()
-            for (i in 0 until count) {
-                val score = outputScores[0][i]
-                if (score > 0.5) { // Filtrar detecciones con alta confianza
-                    val labelIndex = outputClasses[0][i].toInt()
-                    val label = labels.getOrNull(labelIndex) ?: continue // Obtener el label del objeto
-
-                    // Filtrar solo por el label deseado
-                    if (label == "keyboard"&& !isCubePlaced) { // Reemplaza "desired_label" con el label que necesitas
-                        val boundingBox = RectF(
-                            outputLocations[0][i][1] * resizedBitmap.width,  // left
-                            outputLocations[0][i][0] * resizedBitmap.height, // top
-                            outputLocations[0][i][3] * resizedBitmap.width,  // right
-                            outputLocations[0][i][2] * resizedBitmap.height  // bottom
-                        )
-
-                        val detectedObject = DetectedObject(
-                            boundingBox = boundingBox,
-                            labels = listOf(label),
-                            confidence = score
-                        )
-
-                        handleDetectedObject(detectedObject)
-                        isCubePlaced = true
-                    }
+            val detections = objectDetectionModel.detectObjects(bitmap)
+            detections.forEach { detectedObject ->
+                if (detectedObject.label == "keyboard" && model.isCubePlaced.value==false) {
+                    handleDetectedObject(detectedObject)
+                    model.setCubePlaced(true)
                 }
             }
         }
     }
 
-
-    private fun resizeBitmap(bitmap: Bitmap, width: Int, height: Int): Bitmap {
-        return Bitmap.createScaledBitmap(bitmap, width, height, true)
-    }
-
     private fun handleDetectedObject(detectedObject: DetectedObject) {
-        Log.d(TAG, "Objeto detectado: ${detectedObject.labels[0]}")
-        Toast.makeText(this, "Detectado: ${detectedObject.labels[0]}", Toast.LENGTH_SHORT).show()
-
+        Log.d(TAG, "Objeto detectado: ${detectedObject.label}")
+        Toast.makeText(this, "Detectado: ${detectedObject.label}", Toast.LENGTH_SHORT).show()
         // Crear un anchor y dibujar un cubo en la posición detectada.
         val anchor = createAnchorFromObject(detectedObject) ?: return
         createNodeAndAddToScene(
@@ -539,8 +445,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     sceneBehavior.state = STATE_EXPANDED
                 }
                 // Detener el sensor del giroscopio cuando no hay nodo seleccionado
-                gyroscopeListener?.let { sensorManager.unregisterListener(it) }
-                gyroscopeListener = null
+                gyroscopeController.stop()
             }
             coordinator.selectedNode -> {
                 with(bottomSheetNode.header) {
@@ -565,38 +470,11 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
     }
 
-    private val smoothingFactor = 0.1f // Factor de suavización (ajustable entre 0 y 1)
-    private var smoothedRotationX = 0f
-    private var smoothedRotationY = 0f
-    private var smoothedRotationZ = 0f
-
     private fun activateGyroscopeControl(node: Nodes) {
-        if (node !is MaterialNode) return // Solo aplicamos el control a MaterialNodes
-
-        gyroscopeListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event == null || event.sensor.type != Sensor.TYPE_GYROSCOPE) return
-
-                // Lee los valores actuales del giroscopio
-                val rawRotationRateX = event.values[0] // Velocidad angular alrededor del eje X
-                val rawRotationRateY = event.values[1] // Velocidad angular alrededor del eje Y
-                val rawRotationRateZ = event.values[2] // Velocidad angular alrededor del eje Z
-
-                // Suaviza los datos utilizando el promedio móvil exponencial
-                smoothedRotationX = smoothedRotationX + smoothingFactor * (rawRotationRateX - smoothedRotationX)
-                smoothedRotationY = smoothedRotationY + smoothingFactor * (rawRotationRateY - smoothedRotationY)
-                smoothedRotationZ = smoothedRotationZ + smoothingFactor * (rawRotationRateZ - smoothedRotationZ)
-
-                // Aplica los valores suavizados directamente al nodo
-                node.setRotationFromGyroscope(smoothedRotationX, smoothedRotationY, smoothedRotationZ)
-            }
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
-        // Registrar el listener del giroscopio
-        gyroscopeSensor?.let {
-            sensorManager.registerListener(gyroscopeListener, it, SensorManager.SENSOR_DELAY_UI)
+        if (node is MaterialNode) {
+            gyroscopeController.start()
+        } else {
+            gyroscopeController.stop()
         }
     }
 

@@ -1,8 +1,9 @@
-package co.com.jairocpd.ar_app.domain.model
+package co.com.jairocpd.ar_app.shared.ui
 
 import android.content.Context
 import android.view.GestureDetector
 import android.view.MotionEvent
+import co.com.jairocpd.ar_app.domain.model.Nodes
 import com.google.ar.sceneform.HitTestResult
 import com.google.ar.sceneform.ux.BaseTransformableNode
 import com.google.ar.sceneform.ux.SelectionVisualizer
