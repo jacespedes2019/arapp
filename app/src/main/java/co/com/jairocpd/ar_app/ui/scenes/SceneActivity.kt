@@ -72,11 +72,9 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     private val coordinator by lazy { Coordinator(this, ::onArTap, ::onNodeSelected, ::onNodeFocused) }
     //private val model: SceneViewModel by viewModels()
 
-    // Crea el repositorio y el ViewModelFactory
     private val repository by lazy { RandomUserRepository(RetrofitInstance.api) }
     private val viewModelFactory by lazy { SceneViewModelFactory(application, repository) }
 
-    // Crea el ViewModel usando el Factory
     internal val model: SceneViewModel by viewModels { viewModelFactory }
     private val settings by lazy { Settings.instance(this) }
 
@@ -89,7 +87,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
     }
 
-    //Giroscopio
     private lateinit var gyroscopeController: GyroscopeController
 
 
@@ -102,7 +99,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
     private val bottomSheetNode get() = binding.bottomSheetNode
 
-    // Inicializa el modelo
     private lateinit var objectDetectionModel: ObjectDetectionModel
 
 
@@ -112,19 +108,16 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         initNodeBottomSheet()
         initAr()
         initWithIntent(intent)
-        // Inicializar el SensorManager y el sensor del giroscopio
         gyroscopeController = GyroscopeController(
             context = this,
-            smoothingFactor = 0.5f // Factor ajustable
+            smoothingFactor = 0.5f
         ) { x, y, z ->
-            // Callback cuando se actualiza la rotación
             coordinator.focusedNode?.let { node ->
                 if (node is MaterialNode) {
                     node.setRotationFromGyroscope(x, y, z)
                 }
             }
         }
-        // Carga el modelo desde los assets
         objectDetectionModel = ObjectDetectionModel(this)
 
         model.randomUser.observe(this, Observer { user ->
@@ -153,8 +146,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         val intent = Intent(this, SceneActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
-        finish() // Finaliza la actividad actual para evitar que quede en el historial
-    }
+        finish() }
 
 
     override fun onNewIntent(intent: Intent?) {
@@ -279,7 +271,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
 
         if(model.isCubePlaced.value== true) {
-            // Se tocó una parte vacía de la pantalla
             clearAllObjects()
             coordinator.selectNode(null)
             return
@@ -287,14 +278,14 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     private fun clearAllObjects() {
-        // Elimina cada nodo de la escena
+
         model.nodes.value?.forEach { it.detach() }
         model.clearAllNodes()
 
-        // Restablece la bandera
+
         model.setCubePlaced(false)
 
-        // Mensaje opcional
+
         Toast.makeText(this, "All objects deleted", Toast.LENGTH_SHORT).show()
     }
 
@@ -308,7 +299,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
 
         node.attach(anchor(), arSceneView.scene, focus)
 
-        // Establecer la rotación inicial del nodo en 0
         node.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 0f)
 
         model.addNode(node)
@@ -347,7 +337,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         }
         Log.d(TAG, "${name} detect: ${detectedObject.label}")
         Toast.makeText(this, "${name} detected: ${detectedObject.label}", Toast.LENGTH_SHORT).show()
-        // Crear un anchor y dibujar un cubo en la posición detectada.
         val anchor = createAnchorFromObject(detectedObject) ?: return
         createNodeAndAddToScene(
             anchor = { anchor },
@@ -359,26 +348,26 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         val session = arSceneView.session ?: return null
         val frame = arSceneView.arFrame ?: return null
 
-        // Obtener las coordenadas centrales del bounding box
+
         val centerX = detectedObject.boundingBox.centerX()
         val centerY = detectedObject.boundingBox.centerY()
 
-        // Transformar las coordenadas del bounding box al tamaño del viewport de la AR Scene
-        val scaleX = arSceneView.width / 300f // 300 es el ancho del bitmap redimensionado
-        val scaleY = arSceneView.height / 300f // 300 es la altura del bitmap redimensionado
+
+        val scaleX = arSceneView.width / 300f
+        val scaleY = arSceneView.height / 300f
         val viewportX = centerX * scaleX
         val viewportY = centerY * scaleY
 
-        // Realizar un hit test en el espacio AR usando las coordenadas transformadas
+
         val hitResult = frame.hitTest(viewportX, viewportY).firstOrNull() ?: return null
 
-        // Obtener la pose original del hit result
+
         val hitPose = hitResult.hitPose
 
-        // Ajustar la rotación del Pose para que el cubo no esté girado
+
         val correctedPose = hitPose.compose(Pose.makeRotation(0f, 0f, 0f, 1f)) // Quaternion para rotación identidad
 
-        // Crear y devolver el ancla con la pose corregida
+
         return session.createAnchor(correctedPose)
     }
 
@@ -468,7 +457,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     bottomSheetScene.root.tag = false
                     sceneBehavior.state = STATE_EXPANDED
                 }
-                // Detener el sensor del giroscopio cuando no hay nodo seleccionado
                 gyroscopeController.stop()
             }
             coordinator.selectedNode -> {
@@ -487,7 +475,6 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
                     sceneBehavior.state = STATE_COLLAPSED
                     bottomSheetScene.root.tag = true
                 }
-                // Activar el control del giroscopio
                 activateGyroscopeControl(node)
             }
             else -> Unit

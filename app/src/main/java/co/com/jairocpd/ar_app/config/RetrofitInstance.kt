@@ -10,7 +10,7 @@ object RetrofitInstance {
     private const val BASE_URL = "https://randomuser.me/"
 
     private val moshi: Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory()) // Para soporte adicional de Kotlin
+        .add(KotlinJsonAdapterFactory())
         .build()
 
     val api: RandomUserApi by lazy {

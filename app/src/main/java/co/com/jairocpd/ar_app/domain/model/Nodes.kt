@@ -148,11 +148,8 @@ sealed class MaterialNode(
         properties.update(renderable?.material, block)
     }
 
-    /**
-     * Actualiza la rotación del nodo instantáneamente en base a los valores del giroscopio.
-     */
+
     fun setRotationFromGyroscope(x: Float, y: Float, z: Float) {
-        // Convierte los valores del giroscopio (en radianes) a un Quaternion
         localRotation = eulerToQuaternion(x, y, z)
     }
 }

@@ -18,30 +18,24 @@ import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
 class SceneViewModel(application: Application, private val repository: RandomUserRepository) : AndroidViewModel(application) {
-    // Selection state
     private val _selection = MutableLiveData<KClass<out Nodes>>(Cube::class)
     val selection: LiveData<KClass<out Nodes>> = _selection
 
-    // Node management
     private val _nodes = MutableLiveData<List<Nodes>>(emptyList())
     val nodes: LiveData<List<Nodes>> = _nodes
 
-    // Selected node state
     private val _selectedNode = MutableLiveData<Nodes?>(null)
     val selectedNode: LiveData<Nodes?> = _selectedNode
 
-    // Tracking state
     private val _trackingState = MutableLiveData<TrackingState?>(null)
     val trackingState: LiveData<TrackingState?> = _trackingState
 
     private val _trackingFailureReason = MutableLiveData<TrackingFailureReason?>(null)
     val trackingFailureReason: LiveData<TrackingFailureReason?> = _trackingFailureReason
 
-    // Object detection state
     private val _isCubePlaced = MutableLiveData(false)
     val isCubePlaced: LiveData<Boolean> = _isCubePlaced
 
-    // Material properties state
     private val _currentMaterialProperties = MutableLiveData(MaterialProperties.DEFAULT)
     val currentMaterialProperties: LiveData<MaterialProperties> = _currentMaterialProperties
 
@@ -57,10 +51,10 @@ class SceneViewModel(application: Application, private val repository: RandomUse
             val result = repository.fetchRandomUser()
             result.onSuccess { user ->
                 _randomUser.value = user
-                _errorMessage.value = null // Limpia mensajes de error
+                _errorMessage.value = null
             }.onFailure { exception ->
                 _randomUser.value = null
-                _errorMessage.value = exception.message // Actualiza mensaje de error
+                _errorMessage.value = exception.message
             }
         }
     }
@@ -79,8 +73,7 @@ class SceneViewModel(application: Application, private val repository: RandomUse
         _isCubePlaced.value = false
     }
 
-
-    // Object placement state
+    
     fun setCubePlaced(placed: Boolean) {
         _isCubePlaced.value = placed
     }

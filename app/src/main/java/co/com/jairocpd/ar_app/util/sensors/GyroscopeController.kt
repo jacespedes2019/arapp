@@ -10,7 +10,7 @@ import com.google.ar.sceneform.math.Vector3
 
 class GyroscopeController(
     context: Context,
-    private val smoothingFactor: Float = 0.5f, // Ajustable
+    private val smoothingFactor: Float = 0.5f,
     private val onRotationUpdate: (x: Float, y: Float, z: Float) -> Unit
 ) : SensorEventListener {
 
@@ -33,12 +33,12 @@ class GyroscopeController(
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null || event.sensor.type != Sensor.TYPE_GYROSCOPE) return
 
-        // Lee los valores actuales del giroscopio
+
         val rawRotationRateX = event.values[0]
         val rawRotationRateY = event.values[1]
         val rawRotationRateZ = event.values[2]
 
-        // Aplica suavizado con promedio móvil exponencial
+
         smoothedRotationX += smoothingFactor * (rawRotationRateX - smoothedRotationX)
         smoothedRotationY += smoothingFactor * (rawRotationRateY - smoothedRotationY)
         smoothedRotationZ += smoothingFactor * (rawRotationRateZ - smoothedRotationZ)

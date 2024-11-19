@@ -43,7 +43,6 @@ class ObjectDetectionModel(private val context: Context) {
     }
 
     fun detectObjects(bitmap: Bitmap): List<DetectedObject> {
-        // Preprocesar la imagen
         val resizedBitmap = resizeBitmap(bitmap, 300, 300)
         val tensorImage = TensorImage.fromBitmap(resizedBitmap)
         val processedImage = imageProcessor.process(tensorImage)

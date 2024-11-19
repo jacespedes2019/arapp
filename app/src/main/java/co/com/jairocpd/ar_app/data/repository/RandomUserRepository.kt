@@ -23,9 +23,9 @@ class RandomUserRepository(private val api: RandomUserApi) {
                 Result.failure(IOException("Error ${response.code()}: ${response.message()}"))
             }
         } catch (e: IOException) {
-            Result.failure(e) // Manejo de errores de red
+            Result.failure(e)
         } catch (e: Exception) {
-            Result.failure(e) // Otros errores inesperados
+            Result.failure(e)
         }
     }
 }

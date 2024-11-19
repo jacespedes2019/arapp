@@ -21,7 +21,6 @@ class SceneViewModelTest {
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    // Subclase personalizada de Application
     class TestApplication : Application()
 
     private lateinit var testApplication: TestApplication
@@ -39,10 +38,8 @@ class SceneViewModelTest {
         val observer = mock<Observer<Boolean>>()
         viewModel.isCubePlaced.observeForever(observer)
 
-        // Llama al método
         viewModel.setCubePlaced(true)
 
-        // Verifica el cambio
         verify(observer).onChanged(true)
         assertTrue(viewModel.isCubePlaced.value ?: false)
 
