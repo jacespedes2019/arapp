@@ -139,15 +139,12 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
     }
 
     override fun onDestroy() {
+        arSceneView.destroy()
         gyroscopeController.stop()
         objectDetectionModel.close()
         super.onDestroy()
     }
 
-    override fun onPause() {
-        super.onPause()
-        restartApp()
-    }
 
     private fun restartApp() {
         val intent = Intent(this, SceneActivity::class.java)
@@ -161,6 +158,7 @@ class SceneActivity : ArActivity<ActivitySceneBinding>(ActivitySceneBinding::inf
         super.onNewIntent(intent)
         initWithIntent(intent)
     }
+
 
     override fun onBackPressed() {
         if (coordinator.selectedNode != null) {
